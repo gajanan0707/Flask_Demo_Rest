@@ -1,3 +1,6 @@
+import os
+import jwt
+from datetime import datetime, timedelta, timezone
 from utils.http_code import HTTP_200_OK, HTTP_201_CREATED
 
 
@@ -30,3 +33,50 @@ def modify_slz_error(message, status):
     else:
         final_error = None
     return final_error
+
+
+class TokenGenerator:
+    @staticmethod
+    def encode_token(user):
+
+        payload = {
+            "exp": datetime.now(timezone.utc) + timedelta(days=1),
+            "id": str(user.id),
+        }
+        token = jwt.encode(payload, os.environ.get("SECRET_KEY"), algorithm="HS256")
+        return token
+
+    @staticmethod
+    def decode_token(token):
+        return jwt.decode(
+            token,
+            os.environ.get("SECRET_KEY"),
+            algorithms="HS256",
+            options={"require_exp": True},
+        )
+
+    @staticmethod
+    def check_token(token):
+        try:
+            jwt.decode(
+                token,
+                os.environ.get("SECRET_KEY"),
+                algorithms="HS256",
+                options={"require_exp": True},
+            )
+            return True
+        except:
+            return False
+
+    @staticmethod
+    def get_user_id(token):
+        data = jwt.decode(
+            token,
+            os.environ.get("SECRET_KEY"),
+            algorithms="HS256",
+            options={"require_exp": True},
+        )
+        return data["id"]
+
+
+token_generator = TokenGenerator()

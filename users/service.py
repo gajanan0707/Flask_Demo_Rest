@@ -3,10 +3,11 @@ import jwt
 import datetime
 from server import db
 from os import environ
+from users.helper import send_forgot_password_email
 from users.models import User
 from utils.common import generate_response
-from users.validation import CreateLoginInputSchema, CreateSignupInputSchema
-from utils.http_code import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from users.validation import CreateLoginInputSchema, CreateResetPasswordEmailSendInputSchema, CreateSignupInputSchema
+from utils.http_code import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 
 def create_user(request, input_data):
@@ -17,7 +18,8 @@ def create_user(request, input_data):
     check_username_exist = User.query.filter_by(
         username=input_data.get("username")
     ).first()
-    check_email_exist = User.query.filter_by(email=input_data.get("email")).first()
+    check_email_exist = User.query.filter_by(
+        email=input_data.get("email")).first()
     if check_username_exist:
         return generate_response(
             message="Username already exist", status=HTTP_400_BAD_REQUEST
@@ -64,3 +66,18 @@ def login_user(request, input_data):
         return generate_response(
             message="Password is wrong", status=HTTP_400_BAD_REQUEST
         )
+
+
+def reset_password_email_send(request, input_data):
+    create_validation_schema = CreateResetPasswordEmailSendInputSchema()
+    errors = create_validation_schema.validate(input_data)
+    if errors:
+        return generate_response(message=errors)
+    user = User.query.filter_by(email=input_data.get("email")).first()
+    if user is None:
+        return generate_response(message="No record found with this email. please signup first.", status=HTTP_400_BAD_REQUEST)
+    print("user", user)
+    send_forgot_password_email(request, user)
+    return generate_response(
+        message="Link sent to the registered email address.", status=HTTP_200_OK
+    )
