@@ -28,7 +28,8 @@ class LoginApi(Resource):
         input_data = request.get_json()
         response, status = login_user(request, input_data)
         return make_response(response, status)
-    
+
+
 class ResetPasswordEmailSendAPI(Resource):
     @staticmethod
     def post() -> Response:

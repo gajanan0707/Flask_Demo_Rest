@@ -6,11 +6,22 @@ from os import environ
 from users.helper import send_forgot_password_email
 from users.models import User
 from utils.common import generate_response
-from users.validation import CreateLoginInputSchema, CreateResetPasswordEmailSendInputSchema, CreateSignupInputSchema
+from users.validation import (
+    CreateLoginInputSchema,
+    CreateResetPasswordEmailSendInputSchema,
+    CreateSignupInputSchema,
+)
 from utils.http_code import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 
 def create_user(request, input_data):
+    """
+    It creates a new user
+
+    :param request: The request object
+    :param input_data: This is the data that is passed to the function
+    :return: A response object
+    """
     create_validation_schema = CreateSignupInputSchema()
     errors = create_validation_schema.validate(input_data)
     if errors:
@@ -18,8 +29,7 @@ def create_user(request, input_data):
     check_username_exist = User.query.filter_by(
         username=input_data.get("username")
     ).first()
-    check_email_exist = User.query.filter_by(
-        email=input_data.get("email")).first()
+    check_email_exist = User.query.filter_by(email=input_data.get("email")).first()
     if check_username_exist:
         return generate_response(
             message="Username already exist", status=HTTP_400_BAD_REQUEST
@@ -40,6 +50,14 @@ def create_user(request, input_data):
 
 
 def login_user(request, input_data):
+    """
+    It takes in a request and input data, validates the input data, checks if the user exists, checks if
+    the password is correct, and returns a response
+
+    :param request: The request object
+    :param input_data: The data that is passed to the function
+    :return: A dictionary with the keys: data, message, status
+    """
     create_validation_schema = CreateLoginInputSchema()
     errors = create_validation_schema.validate(input_data)
     if errors:
@@ -58,7 +76,7 @@ def login_user(request, input_data):
             },
             environ.get("SECRET_KEY"),
         )
-        input_data["token"] = token.decode("utf-8")
+        input_data["token"] = token
         return generate_response(
             data=input_data, message="User login successfully", status=HTTP_201_CREATED
         )
@@ -69,14 +87,24 @@ def login_user(request, input_data):
 
 
 def reset_password_email_send(request, input_data):
+    """
+    It takes an email address as input, checks if the email address is registered in the database, and
+    if it is, sends a password reset email to that address
+
+    :param request: The request object
+    :param input_data: The data that is passed to the function
+    :return: A response object with a message and status code.
+    """
     create_validation_schema = CreateResetPasswordEmailSendInputSchema()
     errors = create_validation_schema.validate(input_data)
     if errors:
         return generate_response(message=errors)
     user = User.query.filter_by(email=input_data.get("email")).first()
     if user is None:
-        return generate_response(message="No record found with this email. please signup first.", status=HTTP_400_BAD_REQUEST)
-    print("user", user)
+        return generate_response(
+            message="No record found with this email. please signup first.",
+            status=HTTP_400_BAD_REQUEST,
+        )
     send_forgot_password_email(request, user)
     return generate_response(
         message="Link sent to the registered email address.", status=HTTP_200_OK
