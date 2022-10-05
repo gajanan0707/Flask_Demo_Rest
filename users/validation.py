@@ -1,4 +1,3 @@
-import email
 from marshmallow import Schema, fields, validate
 
 
@@ -37,3 +36,7 @@ class CreateLoginInputSchema(Schema):
 class CreateResetPasswordEmailSendInputSchema(Schema):
     # the 'required' argument ensures the field exists
     email = fields.Email(required=True)
+
+class ResetPasswordInputSchema(Schema):
+    # the 'required' argument ensures the field exists
+    password = fields.Str(required=True, validate=validate.Length(min=6))

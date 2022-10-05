@@ -5,11 +5,12 @@ from server import db
 from os import environ
 from users.helper import send_forgot_password_email
 from users.models import User
-from utils.common import generate_response
+from flask_bcrypt import generate_password_hash
+from utils.common import generate_response, TokenGenerator
 from users.validation import (
     CreateLoginInputSchema,
     CreateResetPasswordEmailSendInputSchema,
-    CreateSignupInputSchema,
+    CreateSignupInputSchema, ResetPasswordInputSchema,
 )
 from utils.http_code import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
@@ -108,4 +109,29 @@ def reset_password_email_send(request, input_data):
     send_forgot_password_email(request, user)
     return generate_response(
         message="Link sent to the registered email address.", status=HTTP_200_OK
+    )
+
+
+def reset_password(request, input_data, token):
+    create_validation_schema = ResetPasswordInputSchema()
+    errors = create_validation_schema.validate(input_data)
+    if errors:
+        return generate_response(message=errors)
+    if not token:
+        return generate_response(
+            message="Token is required!",
+            status=HTTP_400_BAD_REQUEST,
+        )
+    token = TokenGenerator.decode_token(token)
+    user = User.query.filter_by(id=token.get('id')).first()
+    if user is None:
+        return generate_response(
+            message="No record found with this email. please signup first.",
+            status=HTTP_400_BAD_REQUEST,
+        )
+    user = User.query.filter_by(id=token['id']).first()
+    user.password = generate_password_hash(input_data.get('password')).decode("utf8")
+    db.session.commit()
+    return generate_response(
+        message="New password SuccessFully set.", status=HTTP_200_OK
     )

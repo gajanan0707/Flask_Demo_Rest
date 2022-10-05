@@ -1,7 +1,7 @@
 from flask import Response
 from flask_restful import Resource
 from flask import request, make_response
-from users.service import create_user, reset_password_email_send, login_user
+from users.service import create_user, reset_password_email_send, login_user, reset_password
 
 
 class SignUpApi(Resource):
@@ -30,7 +30,7 @@ class LoginApi(Resource):
         return make_response(response, status)
 
 
-class ResetPasswordEmailSendAPI(Resource):
+class ForgotPassword(Resource):
     @staticmethod
     def post() -> Response:
         """
@@ -40,4 +40,17 @@ class ResetPasswordEmailSendAPI(Resource):
         """
         input_data = request.get_json()
         response, status = reset_password_email_send(request, input_data)
+        return make_response(response, status)
+
+
+class ResetPassword(Resource):
+    @staticmethod
+    def post(token) -> Response:
+        """
+        POST response method for save new password.
+
+        :return: JSON object
+        """
+        input_data = request.get_json()
+        response, status = reset_password(request, input_data, token)
         return make_response(response, status)
